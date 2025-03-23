@@ -25,3 +25,8 @@ dependencies = [
 
 [tool.ruff]
 exclude = ["test/"]
+
+[dependency-groups]
+dev = [
+    "nuitka>=2.6.8",
+]
