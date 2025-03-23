@@ -2,6 +2,8 @@ import os
 
 from decouple import config
 from PySide6 import QtWidgets, QtCore
+
+# noinspection PyPep8Naming
 from lxml import etree as ElementTree
 from gremlin.input_types import InputType
 from gremlin.ui.input_item import AbstractActionWidget
@@ -30,7 +32,7 @@ class HALightSwitchWidget(AbstractActionWidget):
 
         self.entity_label = QtWidgets.QLabel("Entity")
         self.entity_list = QtWidgets.QComboBox()
-        for entity, friendly_name in light_entities.items():
+        for entity in light_entities.split(","):
             self.entity_list.addItem(entity)
         self.entity_list.activated.connect(self._entity_list_changed_cb)
 
@@ -82,7 +84,7 @@ class HALightSwitchWidget(AbstractActionWidget):
                 buttons=QtWidgets.QMessageBox.StandardButton.Ok,
                 defaultButton=QtWidgets.QMessageBox.StandardButton.Ok,
             )
-            if entity_error == QtWidgets.QMessageBox.Ok:
+            if entity_error == QtWidgets.QMessageBox.StandardButton.Ok:
                 return
 
         else:
@@ -108,8 +110,6 @@ class HALightSwitchWidget(AbstractActionWidget):
 
     def _color_button_cb(self):
         self.button_press_dialog = QtWidgets.QColorDialog.getColor().getRgb()
-        rgb_color_hex = str(self.button_press_dialog)
-        print(rgb_color_hex)
         self.action_data.color = self.button_press_dialog
         self.action_modified.emit()
 
@@ -122,8 +122,10 @@ class HALightSwitchWidget(AbstractActionWidget):
         command_id = self.command_list.findText(self.action_data.command)
         self.entity_list.setCurrentIndex(entity_id)
         self.command_list.setCurrentIndex(command_id)
-        self.last_color.setText(f"Current Color is: {self.action_data.color}")
-        self.last_color.setStyleSheet(f"color: rgb{self.action_data.color}")
+        self.last_color.setText(f"Current Color is: RGB {self.action_data.color}")
+        self.last_color.setStyleSheet(
+            f"color: rgb({self.action_data.color[0]}, {self.action_data.color[1]}, {self.action_data.color[2]})"
+        )
         self.brightness_label.setText(f"Brightness {self.action_data.brightness}")
         if isinstance(self.action_data.brightness, int):
             self.brightness_slider.setSliderPosition(self.action_data.brightness)
@@ -160,9 +162,10 @@ class EffectDialog(QtWidgets.QDialog):
     def _effect_list_change_cb(self):
         self.effect = self.effect_list.currentText()
 
+
 class HALightFunctor(AbstractFunctor):
-    def __init__(self, action):
-        super().__init__(action)
+    def __init__(self, action, parent=None):
+        super().__init__(action, parent)
         self.entity_name = action.entity_name
         self.command = action.command
         self.color = action.color
@@ -176,7 +179,8 @@ class HALightFunctor(AbstractFunctor):
                 ha_client.trigger_light_service(self.entity_name, self.command)
             case switch if "switch" in name:
                 pass
-                #ha_client.trigger_service()
+                # ha_client.trigger_service()
+
 
 class HALightSwitch(AbstractAction):
     name = "HA Light Switch"
